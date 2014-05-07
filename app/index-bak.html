@@ -32,8 +32,7 @@
             </div>
 
             <div id="scribbleContent">
-                <div class="scrb-info"></div>
-                <div class="scrb-posts"></div>
+              <p>Scribble live stuff will go here...</p>
             </div>
 
             <div class="footer">
@@ -43,23 +42,21 @@
         </div>
 
 
-        <script type="text/template" id="scrb-outer">
-          <div class="scrb-info">
-              <h1><%= Title %></h1>
-              <p><strong><%= Description %></strong></p>
-          </div>
-          <div class="scrb-postsLists">
+        <script type="text/template" id="event-template">
+          <h1><%= Title %></h1>
+          <p><strong><%= Description %></strong></p>
+          <div class="postsList">
           </div>
         </script>
 
-        <script type="text/template" id="scrb-posts">
+        <script type="text/template" id="posts-template">
           <p>POSTS!</p>
           <ul>
             
           </ul>
         </script>
 
-        <script type="text/template" id="scrb-post">
+        <script type="text/template" id="post-template">
           <div style="border:1px solid #ccc; padding: 1em; margin: 1em 0;">
             <%= Content %>
           </div>
