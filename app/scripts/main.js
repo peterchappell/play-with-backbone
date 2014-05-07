@@ -4,10 +4,16 @@
 
 
     var ScribblePost = Backbone.Model.extend({
+        idAttribute: 'Id',
         defaults: function() {
             return {
                 Content: '(empty)'
             }
+        },
+        initialize: function() {
+            this.on('change', function() {
+                console.log('model changed', this);
+            });
         }
     });
 
@@ -18,7 +24,7 @@
         template: _.template($('#scrb-post').html()),
         initialize: function() {
             this.listenTo(this.model, 'change', this.render);
-            this.listenTo(this.model, 'destroy', this.remove);
+            this.listenTo(this.model, 'remove', this.remove);
         },
         render: function() {
             console.log('render post');
@@ -29,32 +35,43 @@
 
 
     var ScribblePostsView = Backbone.View.extend({
-        el: $('#scribbleContent .scrb-postsLists'),
         initialize: function() {
-            //this.listenTo(this.collection, 'add remove sort', this.testSet);
-            this.listenTo(this.collection, 'change', this.render);
-            this.render();
+            this.listenTo(this.collection, 'reset sort', this.render);
+            this.listenTo(this.collection, 'add', this.addPost);
         },
         render: function() {
             console.log('rendering collection');
-            /*var container = document.createDocumentFragment();
+            var container = document.createDocumentFragment();
             this.collection.each(function(post) {
-                //var postView = new ScribblePostView({
-                //    model: post
-                //});
-                //container.appendChild(postView.render().el);
-                container.append('[hello] ');
-            }, this );*/
-            this.$el.append('<p>Collection!</p>');
+                var postView = new ScribblePostView({
+                    model: post
+                });
+                container.appendChild(postView.render().el);
+            }, this );
+            this.$el.append(container);
+            return this;
         },
-        testSet: function() {
-            console.log('collection has been changed');
+        addPost: function(post) {
+            console.log('adding a single post');
+            var postView = new ScribblePostView({model: post});
+            this.$el.prepend(postView.render().el); // TODO: Assumes that only new posts are added (i.e. to the top)
         }
     });
 
 
     var ScribblePosts = Backbone.Collection.extend({
-        model: ScribblePost
+        model: ScribblePost,
+        initialize: function() {
+            this.on('add', function() {
+                console.log('model added to posts collection');
+            });
+            this.on('remove', function(post) {
+                console.log('model removed from posts collection');
+            });
+            this.on('reset', function() {
+                console.log('posts collection was reset');
+            });
+        }
     });
 
 
@@ -65,7 +82,7 @@
             this.listenTo(this.model, 'change', this.render);
         },
         render: function() {
-            console.log('rendering whole page');
+            console.log('rendering event');
             this.$el.html(this.template(this.model.toJSON()));
             return this;
         }
@@ -81,13 +98,21 @@
             };
         },
         token: 'asdf',
-        initialize: function() {
-            this.postsCollection = new ScribblePosts(this.get('Posts'));
-            this.on('change', this.updatePosts);
-        },
+        max: 10, // change (increase) this to get infinite scrolling but still get updates.
         url: function() {
-            //return 'http://apiv1.scribblelive.com/event/' + this.id + '/page/last/?Token=' + this.token + '&Max=100&Order=asc&format=json';
+            //return 'http://apiv1.scribblelive.com/event/' + this.id + '/all/?Token=' + this.token + '&Max=' + max + '&Order=asc&format=json';
             return '/scripts/test_data.json'
+        },
+        initialize: function() {
+            this.postsCollection = new ScribblePosts([]);
+        },
+        parse: function(response) {
+            if (this.postsCollection.length) {
+                this.postsCollection.updateModels(response.Posts);
+            } else {
+                this.postsCollection.reset(response.Posts);
+            }
+            return _.omit(response, 'Posts');
         },
         update: function() {
             var thisModel = this;
@@ -95,10 +120,6 @@
             _.delay(function() {
                 thisModel.update();
             }, 10000);
-        },
-        updatePosts: function() {
-            console.log('updating posts');
-            this.postsCollection.set(this.get('Posts'));
         }
     });
 
@@ -107,13 +128,14 @@
     var scribble = new ScribbleEmbedModel({
         id: '560845'
     });
-    scribble.update();
     var scribbleView = new ScribbleEmbedView({
         model: scribble
     });
     var scribblePostsView = new ScribblePostsView({
-        collection: scribble.postsCollection
+        collection: scribble.postsCollection,
+        el: '#scribbleContent .scrb-posts'
     });
+    scribble.update();
 
     window.test_model = scribble;
   
